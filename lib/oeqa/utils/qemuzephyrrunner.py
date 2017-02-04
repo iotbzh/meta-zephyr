@@ -1,8 +1,8 @@
-# Copyright (C) 2015-2016 Intel Corporation
+# Copyright (C) 2015-2017 Intel Corporation
 #
 # Released under the MIT license (see COPYING.MIT)
 
-# This module provides a class for starting qemu images of poky tiny.
+# This module provides a class for starting qemu images.
 # It's used by testimage.bbclass.
 
 import subprocess
@@ -13,6 +13,7 @@ import socket
 import select
 import bb
 import tempfile
+import sys
 from oeqa.utils.qemurunner import QemuRunner
 
 class QemuZephyrRunner(QemuRunner):
@@ -28,6 +29,10 @@ class QemuZephyrRunner(QemuRunner):
         self.socketname = self.socketfile.name
         self.server_socket = None
         self.kernel = kernel
+        self.buffers = b''
+        self._rbufsize = 4096
+        # 5 minutes timeout...
+        self.endtime = time.time() + 60*5
 
     def create_socket(self):
         bb.note("waiting at most %s seconds for qemu pid" % self.runqemutime)
@@ -117,20 +122,33 @@ class QemuZephyrRunner(QemuRunner):
         bb.note("qemu started, pid is %s" % self.runqemu.pid)
         return self.create_socket()
 
-    def wait_for_serial(self, func_timeout, data_timeout):
-        stopread = False
-        check_endtime = False
-        self.server_socket.setblocking(0)
-        endtime = time.time() + func_timeout
+    def _readline(self):
+        nl = self.buffers.find(b'\n')
+        if nl >= 0:
+            nl += 1
+            line = self.buffers[:nl]
+            newbuf = self.buffers[nl:]
+            self.buffers = newbuf
+            return line
+        return None
 
-        while time.time() < endtime:
-            sread, _, _ = select.select([self.server_socket],[],[],data_timeout)
-            if not sread:
-                break
-            answer = self.server_socket.recv(1024)
-            if answer:
-                self.log(answer)
-            else:
-                break
+    def serial_readline(self):
+        line = self._readline()
+        if line is None:
+            while True:
+                if time.time() >= self.endtime:
+                    bb.warn("Timeout!")
+                    raise Exception("Timeout")
+                data = self.server_socket.recv(self._rbufsize)
+                if data is None:
+                    raise Exception("No data on read ready socket")
 
-        return self.logfile
+                self.buffers = self.buffers + data
+                line = self._readline()
+                if line is not None:
+                    break
+
+        self.log(line)
+        return line
+
+

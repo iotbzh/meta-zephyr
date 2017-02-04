@@ -1,4 +1,4 @@
-# Copyright (C) 2013-2016 Intel Corporation
+# Copyright (C) 2013-2017 Intel Corporation
 #
 # Released under the MIT license (see COPYING.MIT)
 
@@ -62,5 +62,5 @@ class QemuTargetZephyr(QemuTarget):
         bb.note("Qemu log file: %s" % self.qemulog)
         super(QemuTarget, self).deploy()
 
-    def wait_for_serial(self, func_timeout, data_timeout):
-        return self.runner.wait_for_serial(func_timeout, data_timeout)
+    def serial_readline(self):
+        return self.runner.serial_readline()
