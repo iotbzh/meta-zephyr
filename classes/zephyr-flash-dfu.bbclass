@@ -1,9 +1,10 @@
 
 python do_flash_usb() {
     import subprocess
+
     return_code = subprocess.call("which dfu-util", shell=True)
     if return_code != 0:
-        bb.error("ERROR: dfu_util binary not in PATH")
+        bb.error("ERROR: dfu-util binary not in PATH")
         sys.exit(1)
 
     board = d.getVar('BOARD', True)
