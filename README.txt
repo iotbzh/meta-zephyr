@@ -9,10 +9,10 @@ Prerequisites:
 ==============
 
 This layer depends on:
-    Yocto distro (master)
+    Yocto distro (dunfell)
         git://git.yoctoproject.org/poky
     Python layer (meta-openembedded/meta-python)
-        git://git.openembedded.org/meta-openembedded
+        git://git.openembedded.org/meta-openembedded (dunfell)
 
 Modify local conf by adding:
     DISTRO="zephyr"
